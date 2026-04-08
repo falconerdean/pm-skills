@@ -238,17 +238,49 @@ Input Analysis
    g. **Block if required vars are still missing** — prompt again or warn which phases are blocked
    h. **Warn but continue** for optional/pipeline vars
 
-7. Initialize [company_state_template.json](./templates/company_state_template.json) → `~/startup-workspace/state/company_state.json`
-8. **Repository Setup (gitignore-first rule):**
+7. **Token Validation** (via [validate_tokens.py](./scripts/validate_tokens.py)):
+   Run `python3 scripts/validate_tokens.py --workspace ~/startup-workspace` to verify every configured token is valid — not just present.
+
+   **What it checks:**
+   - Loads tokens from TWO sources: local `.env` AND Doppler (if configured)
+   - For each token, makes a real API call to verify it works (not just that it exists)
+   - Verifies tokens are scoped to the correct project/account
+   - Reports: VALID, INVALID (bad token), WRONG_SCOPE (valid but wrong project), MISSING
+
+   **Validation rules per service:**
+   | Service | Test | What "wrong scope" means |
+   |---------|------|--------------------------|
+   | Anthropic | `GET /v1/models` | N/A — account-level |
+   | GitHub | `gh api user` | N/A — user-level |
+   | Netlify | Fetch site by ID | Site ID doesn't match expected site |
+   | Sanity | Create + read + delete test doc | Token is for wrong project ID |
+   | Stripe | `GET /v1/charges?limit=1` | Returns data from wrong account |
+   | Sentry | `GET /api/0/projects/{org}/{project}/` | Wrong org or project |
+
+   **If Doppler AND local .env both have a token, compare them.** Flag mismatches — the CEO may have updated one but not the other.
+
+   **On failure:**
+   - INVALID tokens: block startup, ask CEO to fix
+   - WRONG_SCOPE tokens: block startup, show which project/account the token is actually for
+   - MISSING tokens: warn if optional, block if required
+   - Doppler/.env mismatch: warn and ask CEO which is correct
+
+   **This step runs during initialization AND can be re-run anytime via:**
+   ```bash
+   python3 scripts/validate_tokens.py --workspace ~/startup-workspace
+   ```
+
+8. Initialize [company_state_template.json](./templates/company_state_template.json) → `~/startup-workspace/state/company_state.json`
+9. **Repository Setup (gitignore-first rule):**
    a. Create the git repo if new
    b. FIRST COMMIT: `.gitignore` + `README.md` ONLY — no code, no env files
    c. `.gitignore` must cover: `.env`, `env.txt`, `*.local`, `secrets.*`, `node_modules/`, `.claude-engine/logs/`, `*.key`
    d. Create `.env` file AFTER .gitignore is committed
    e. Verify `.env` does NOT appear in `git status` (must be ignored)
    f. Only THEN proceed to any code
-9. Write first product epic to `state/backlog.json` (from wizard Stage 1 answers)
-10. Set company_state.json: current_phase = "planning"
-11. Print: "Company initialized. Run `/loop 30m /startup-engine` to start the COO cycle."
+10. Write first product epic to `state/backlog.json` (from wizard Stage 1 answers)
+11. Set company_state.json: current_phase = "planning"
+12. Print: "Company initialized. Run `/loop 30m /startup-engine` to start the COO cycle."
 
 ### On COO Cycle (every 30 min via /loop)
 
