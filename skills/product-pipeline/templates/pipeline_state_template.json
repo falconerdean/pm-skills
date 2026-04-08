@@ -1,0 +1,25 @@
+{
+  "idea": "",
+  "outcomes": [],
+  "mode": "standard",
+  "slug": "",
+  "created_at": "",
+  "output_dir": "",
+  "phases": {
+    "phase1": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "phase2": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "phase3": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "gate1":  { "status": "pending", "iterations": 0, "final_score": null, "dimension_scores": null, "gaps_found": 0, "gaps_resolved": 0, "limitations": [] },
+    "phase4": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "phase5": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "phase6": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null, "epics_processed": [] },
+    "gate2":  { "status": "pending", "iterations": 0, "final_score": null, "dimension_scores": null, "gaps_found": 0, "gaps_resolved": 0, "limitations": [] },
+    "phase7": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "phase8": { "status": "pending", "started_at": null, "completed_at": null, "quality_score": null },
+    "final":  { "status": "pending", "iterations": 0, "final_score": null }
+  },
+  "current_stage": 1,
+  "current_phase": "phase1",
+  "total_agents_spawned": 0,
+  "total_execution_time_seconds": 0
+}

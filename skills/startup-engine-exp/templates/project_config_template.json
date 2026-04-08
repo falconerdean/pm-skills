@@ -1,0 +1,77 @@
+{
+  "product": {
+    "name": "",
+    "tagline": "",
+    "description": "",
+    "target_audience": "",
+    "problem_statement": "",
+    "desired_outcomes": []
+  },
+  "repository": {
+    "type": "new",
+    "url": "",
+    "local_path": "",
+    "default_branch": "main",
+    "monorepo": false
+  },
+  "tech_stack": {
+    "frontend": {
+      "framework": "",
+      "language": "",
+      "styling": "",
+      "component_library": ""
+    },
+    "backend": {
+      "framework": "",
+      "language": "",
+      "api_style": ""
+    },
+    "database": {
+      "type": "",
+      "provider": ""
+    },
+    "hosting": {
+      "provider": "",
+      "type": ""
+    }
+  },
+  "integrations": {
+    "cms": {
+      "enabled": false,
+      "provider": "",
+      "project_id": "",
+      "dataset": ""
+    },
+    "design": {
+      "enabled": false,
+      "provider": "",
+      "existing_file": ""
+    },
+    "marketing": {
+      "enabled": false,
+      "provider": "",
+      "channels": []
+    },
+    "payments": {
+      "enabled": false,
+      "provider": ""
+    },
+    "analytics": {
+      "enabled": false,
+      "provider": ""
+    },
+    "error_tracking": {
+      "enabled": false,
+      "provider": ""
+    }
+  },
+  "preferences": {
+    "tdd": true,
+    "ci_cd": true,
+    "code_review_strictness": "standard",
+    "ceo_gate_on_design": true,
+    "auto_deploy_staging": true,
+    "budget_per_sprint": 150
+  },
+  "wizard_completed_at": ""
+}

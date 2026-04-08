@@ -1,0 +1,35 @@
+# Secrets — NEVER commit
+*.env
+.env.*
+droplet-secrets.env
+.claude-droplet-config.txt
+credentials*.json
+
+# Raw learning captures (high volume, may contain sensitive data)
+captures/*.jsonl
+
+# macOS
+.DS_Store
+._*
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Worktrees
+.claude/worktrees/
+
+# Temp
+*.tmp
+*.swp
+
+# SpecStory transcripts
+.specstory/

@@ -1,0 +1,58 @@
+{
+  "company": {
+    "name": "",
+    "product": "",
+    "initialized_at": "",
+    "workspace": "~/startup-workspace"
+  },
+  "sprint": {
+    "number": 1,
+    "started_at": "",
+    "epic": "",
+    "epic_description": "",
+    "target_completion": ""
+  },
+  "sdlc": {
+    "current_phase": "planning",
+    "phase_number": 1,
+    "phases": {
+      "continuous_intel": { "status": "pending", "last_run": null },
+      "planning":         { "status": "pending", "started_at": null, "completed_at": null },
+      "research":         { "status": "pending", "started_at": null, "completed_at": null },
+      "requirements":     { "status": "pending", "started_at": null, "completed_at": null },
+      "ux_design":        { "status": "pending", "started_at": null, "completed_at": null },
+      "tech_design":      { "status": "pending", "started_at": null, "completed_at": null },
+      "development":      { "status": "pending", "started_at": null, "completed_at": null },
+      "testing":          { "status": "pending", "started_at": null, "completed_at": null },
+      "deployment":       { "status": "pending", "started_at": null, "completed_at": null, "awaiting_ceo_approval": false },
+      "growth":           { "status": "pending", "started_at": null, "completed_at": null },
+      "evolution":        { "status": "pending", "started_at": null, "completed_at": null }
+    }
+  },
+  "ceo": {
+    "last_checkin": null,
+    "next_checkin_due": null,
+    "pending_approvals": [],
+    "feedback": []
+  },
+  "quality": {
+    "design_review_score": null,
+    "code_review_score": null,
+    "test_pass_rate": null,
+    "test_coverage": null,
+    "security_score": null,
+    "lighthouse_score": null
+  },
+  "blockers": [],
+  "costs": {
+    "sprint_total": 0,
+    "cycle_total": 0,
+    "monthly_total": 0,
+    "budget_remaining": 750
+  },
+  "agents": {
+    "total_spawned": 0,
+    "coo_cycles_completed": 0,
+    "last_coo_cycle": null
+  }
+}
