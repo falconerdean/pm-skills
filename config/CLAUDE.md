@@ -1,10 +1,12 @@
 ## Secrets & Environment: Doppler is the Source of Truth
 
-This environment uses **Doppler** for all secrets management. At the start of every session, load secrets:
+This environment uses **Doppler** for all secrets management. Secrets are **auto-downloaded at session start** to `/tmp/.claude-doppler-env` via a SessionStart hook. When you need secrets in a Bash command, source the file:
 
 ```bash
-eval "$(doppler secrets download --no-file --format env 2>/dev/null)"
+set -a; source /tmp/.claude-doppler-env 2>/dev/null; set +a
 ```
+
+On **droplets**, secrets auto-load via `.profile` — no sourcing needed.
 
 Key variable mappings:
 - `GITHUB_PAT` → use as `GH_TOKEN` (map it: `export GH_TOKEN="$GITHUB_PAT"`)
