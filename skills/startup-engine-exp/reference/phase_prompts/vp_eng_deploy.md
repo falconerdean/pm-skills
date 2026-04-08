@@ -59,6 +59,21 @@ Write deployment summary to {workspace}/reviews/ceo_reviews/deploy_{epic}.md:
 Email CEO via GHL with the deployment summary and staging URL.
 Do NOT deploy until CEO approves via `/btw approve`.
 
+### Step 5b: Verify CI/CD Pipeline (Sprint 7 Retro, 2026-04-08)
+
+Before deploying, verify the automated deploy pipeline actually works. Do NOT rely on manual deploys.
+
+1. **Check the platform has a repo linked:**
+   - Netlify: `netlify api getSite --data '{"site_id":"$SITE_ID"}' | jq '.build_settings.repo_url'` — must not be null/empty
+   - If null: the GitHub App is not installed or the repo is not linked. **Fix this before deploying.**
+2. **Verify a push triggers a build:**
+   - Push a trivial change (whitespace in README, comment in config)
+   - Check if the platform starts a build: `netlify api listSiteDeploys --data '{"site_id":"$SITE_ID"}' | jq '.[0].created_at'`
+   - If no build starts: the webhook is broken. Fix it.
+3. **If the automated path is broken, FIX IT** — do not work around it with `netlify deploy --prod` or manual uploads. Manual deploys hide broken CI/CD and guarantee that future pushes silently fail to deploy.
+
+**Why this exists:** Sprint 7 ran 7 sprints with manual `netlify deploy --prod`. When auto-deploy was needed, the Netlify site had no GitHub App installation, no webhook, and no repo link. Pushes to `main` did nothing.
+
 ### Step 6: Deploy (after CEO approval)
 - Deploy to staging, run real smoke tests
 - If smoke tests pass: deploy to production

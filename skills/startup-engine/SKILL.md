@@ -118,6 +118,20 @@ These are configured in Claude Code settings (not .env), but agents depend on th
 | GitHub (gh CLI) | PR creation, issue tracking | `gh auth login` |
 | Netlify (netlify CLI) | Deploy, build management | `netlify login` or env token |
 
+### Doppler Integration (Sprint 7 Retro, 2026-04-08)
+
+**Check Doppler FIRST before asking the CEO for any credential.** Doppler is the source of truth for all secrets. On droplets, secrets auto-load via `.profile`. Locally, source `/tmp/.claude-doppler-env`.
+
+| Doppler Key | Engine .env Key | Notes |
+|------------|----------------|-------|
+| `ANTHROPIC_API_KEY` | `ANTHROPIC_API_KEY` | Same name |
+| `GITHUB_PAT` | `GITHUB_TOKEN` | Different name — map it |
+| `NETLIFY_API_TOKEN` | `NETLIFY_AUTH_TOKEN` | Different name — map it |
+| `SANITY_API_WRITE_TOKEN` | `SANITY_WRITE_TOKEN` | Different name — map it |
+| `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` | Same name |
+
+**WARNING:** Sprint 7 found a Sanity write token scoped to the wrong project (v5 instead of v6). Always verify credentials via real API call — existence ≠ validity. See `sdlc_protocol.md` Phase 5.5 for verification procedures.
+
 ### Environment Setup Script
 
 All env management goes through [env_setup.py](./scripts/env_setup.py):
@@ -257,7 +271,14 @@ Input Analysis
 9. Check: does the current phase's expected output artifact exist?
    - YES → Run quality gate check → If pass: advance to next phase, reset attempt counter
    - NO → Increment attempt counter in `state/phase_attempts.json`
-10. If advancing: load the next phase's VP prompt from [phase_prompts/](./reference/phase_prompts/)
+10. **E2E Gate Enforcement (Sprint 7 Retro Rule):** When checking E2E results before advancing to Phase 7.5/8:
+    - Read the E2E report's verdict field. **Anything other than exactly "PASS" is treated as FAIL** — including "PARTIAL", "PASS (with caveats)", or "PASS*".
+    - The E2E report **must contain a viewable URL** showing the product working with real data.
+    - If verdict ≠ "PASS" OR no URL: **return to Phase 6 (Development)**. Do not re-run E2E hoping for a different result — fix the underlying issue first.
+    - **Pre-ship checklist** (must be true before advancing past E2E):
+      - `[ ] CAN YOU SEE IT?` — The product's primary output is viewable at a URL with real data
+      - `[ ] CREDENTIALS VERIFIED` — Every credential was tested via real API call (not just existence check)
+11. If advancing: load the next phase's VP prompt from [phase_prompts/](./reference/phase_prompts/)
 11. Substitute variables ({workspace}, {epic}, {sprint}, prior phase outputs)
 12. Spawn VP Agent via Agent tool (**always foreground** — see Safety Controls below)
 13. Update company_state.json with new phase, UTC timestamp

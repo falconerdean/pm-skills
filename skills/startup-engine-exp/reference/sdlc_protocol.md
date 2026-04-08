@@ -51,6 +51,38 @@ For every external system a feature integrates with, there must be at least one 
 that crosses the boundary with a realistic payload. Mocking at the boundary provides
 false confidence. The bugs that ship are almost always at system boundaries.
 
+### Rule: "Can You See It?" (Sprint 7 Retro, 2026-04-08)
+Every sprint that touches rendering or user-facing output MUST produce a URL the CEO can open in a browser and see the product working with real data. If no such URL exists at the end of E2E testing, the sprint has FAILED — regardless of how many tests pass. The COO must not advance the sprint without it. The E2E agent must never use "PARTIAL" as a verdict.
+
+**Why this exists:** Sprint 7 shipped 1,406 passing tests and zero viewable therapist websites. The E2E test gave a "PARTIAL" verdict, listed the gap as an "action item", and the COO advanced the sprint. 1,406 tests mean nothing if nobody can open a URL and see the product working.
+
+### Rule: Credential Verification Must Test, Not Just Check (Sprint 7 Retro, 2026-04-08)
+Phase 5.5 must make real API calls for every credential — not just verify the env var exists. A token for the wrong project is worse than no token because it gives false confidence.
+
+Verification patterns per service:
+- **Sanity:** Create a test document, read it back, delete it. Verify the token's project ID matches the expected project.
+- **Stripe:** `stripe.charges.list({limit: 1})` — confirm the key connects to the correct account.
+- **Netlify:** Fetch the site by ID — confirm it returns the expected site name.
+- **GitHub:** `gh api user` — confirm the token has the expected scopes.
+- **Doppler:** `doppler secrets --only-names` — confirm the project/config is correct.
+
+**Why this exists:** Sprint 7's Sanity write token was valid, had Editor permissions, but was scoped to the wrong project (v5 instead of v6). No agent ever made an API call to verify it worked against the correct project.
+
+### Rule: Success Criteria Must Be User-Visible (Sprint 7 Retro, 2026-04-08)
+Every sprint must include at least one success criterion phrased as: "A [user type] can [action] and see [result] at [URL]." If every criterion can be validated by a unit test or API call without opening a browser, the criteria are wrong.
+
+**Why this exists:** Sprint 7's five success criteria were all engineer-visible ("single document type serves both pipeline and rendering") and could be "validated" without anyone opening a browser. Every criterion passed. The product was broken.
+
+### Rule: Schema Changes Must Update Types AND Test Fixtures (Sprint 7 Retro, 2026-04-08)
+When a data schema is expanded (e.g., upstream service writes a richer structure), three things must happen in the same commit:
+1. The schema definition (e.g., Sanity schema, DB migration)
+2. The TypeScript type matching the actual upstream data shape
+3. Test fixtures using real upstream data (not simplified placeholders)
+
+Any schema accepting external data must have a contract test that feeds a real document snapshot through the full rendering path and asserts no crash and correct output.
+
+**Why this exists:** The pipeline wrote `credentials` as `Array<{text: string}>`. The TypeScript type said `string`. Test fixtures used `'LCSW'`. Build passed. 1,406 tests passed. The site rendered `[object Object]`.
+
 ## Phase State Machine
 
 ```
@@ -193,7 +225,9 @@ INITIALIZE → PLANNING → RESEARCH → REQUIREMENTS → UX_DESIGN → TECH_DES
      f. If all vars provided: advance to Phase 6
      g. If 60 minutes pass without all vars: write WORKING_CONTEXT.md, commit to git, PAUSE
   5. Verify sandbox/test variants exist: if Stripe is needed, confirm `sk_test_` not `sk_live_`
-- **Quality Gate:** All required credentials set in .env, all using sandbox/test mode
+  6. **(Sprint 7 Retro Rule) Make a real API call per credential** to verify it works — not just that it exists. See "Credential Verification Must Test, Not Just Check" rule above for per-service patterns.
+  7. **(Sprint 7 Retro Rule) Verify token is scoped to the correct project/account.** Query the token's project list or account info and confirm it matches the expected target. A valid token for the wrong project is worse than no token.
+- **Quality Gate:** All required credentials set in .env, all using sandbox/test mode, all verified via real API call
 - **Advance Condition:** pending_credentials.json is empty (all resolved)
 - **CEO Gate:** No (but CEO is emailed for each missing credential)
 

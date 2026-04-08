@@ -1,35 +1,16 @@
 ---
-name: startup-engine-exp
+name: startup-engine
 description: >
-  EXPERIMENTAL — sandbox version of the startup engine for testing changes before promoting to production.
-  Invoke with /startup-engine-exp. Identical to production except for changes being tested.
-  DO NOT use for real projects — use /startup-engine for production work.
-  Triggers on: "experimental startup", "test startup engine", "startup engine exp".
+  Autonomous AI development team that builds and ships real software products.
+  COO orchestrator advances through Planning, Research, Requirements, UX/UI Design, Technical Design,
+  Development, Testing, Deployment, Growth, and Evolution phases. Spawns VP agents who invoke
+  existing skills and MCP tools to produce real, working code and artifacts.
+  Runs on /loop cron with 3-day CEO review cadence.
+  Triggers on: "startup engine", "start the company", "run the startup", "advance the sprint",
+  "coo cycle", "startup loop".
 ---
 
-# AI Startup Engine (EXPERIMENTAL)
-
-> **This is the experimental sandbox.** Changes here are tested before promoting to
-> `/startup-engine` (production). To promote: copy this directory over the production
-> one and push to the golden droplet repo.
-> 
-> **Current experiment:** Multi-model "Team of Specialists" — using GPT-4o and Gemini
-> alongside Claude for code review, security audit, and architecture review phases.
-> Based on research showing Claude+Gemini pair catches 91% of bugs that 5-model
-> ensemble catches (Milvus 2026), and 53%→80% bug detection improvement from
-> multi-model debate (arXiv Team of Rivals paper, Jan 2026).
->
-> **New scripts:**
-> - `scripts/model_client.py` — Unified LiteLLM wrapper with routing, budget, fallback
-> - `scripts/review_debate.py` — Multi-model code review debate (GPT + Gemini + Claude synthesis)
->
-> **Changed phase prompts:**
-> - `vp_eng_testing.md` — Added multi-model debate option for code review
-> - `vp_eng_e2e.md` — Cross-model verification of generated code
->
-> **Quality-first principle:** Multi-model is used ONLY where research shows it
-> improves quality. Not for speed. Not for cost savings. For catching bugs that
-> single-model review misses.
+# AI Startup Engine
 
 ## CRITICAL: THIS IS NOT A SIMULATION
 
@@ -136,6 +117,20 @@ These are configured in Claude Code settings (not .env), but agents depend on th
 | Chrome DevTools | Browser testing, Lighthouse audits, screenshots | Claude Code MCP settings |
 | GitHub (gh CLI) | PR creation, issue tracking | `gh auth login` |
 | Netlify (netlify CLI) | Deploy, build management | `netlify login` or env token |
+
+### Doppler Integration (Sprint 7 Retro, 2026-04-08)
+
+**Check Doppler FIRST before asking the CEO for any credential.** Doppler is the source of truth for all secrets. On droplets, secrets auto-load via `.profile`. Locally, source `/tmp/.claude-doppler-env`.
+
+| Doppler Key | Engine .env Key | Notes |
+|------------|----------------|-------|
+| `ANTHROPIC_API_KEY` | `ANTHROPIC_API_KEY` | Same name |
+| `GITHUB_PAT` | `GITHUB_TOKEN` | Different name — map it |
+| `NETLIFY_API_TOKEN` | `NETLIFY_AUTH_TOKEN` | Different name — map it |
+| `SANITY_API_WRITE_TOKEN` | `SANITY_WRITE_TOKEN` | Different name — map it |
+| `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` | Same name |
+
+**WARNING:** Sprint 7 found a Sanity write token scoped to the wrong project (v5 instead of v6). Always verify credentials via real API call — existence ≠ validity. See `sdlc_protocol.md` Phase 5.5 for verification procedures.
 
 ### Environment Setup Script
 
@@ -259,44 +254,41 @@ Input Analysis
 
 **Safety checks FIRST (before any agent work):**
 
-1. **Session lock:** Check if `~/startup-workspace/ENGINE.lock` exists:
-   - Read the lock file — it contains `{ "pid": <PID>, "started_at": "<UTC>", "session_id": "<id>" }`
-   - Check if the PID is still running: `kill -0 <PID> 2>/dev/null`
-   - **If PID is alive:** Another engine session is active. Print "Engine locked by session {id} (PID {pid}, started {time}). Exiting." and **exit immediately** — do NOT spawn agents.
-   - **If PID is dead:** Stale lock from a crashed session. Delete the lock file, print "Cleaned stale lock from crashed session {id}." and continue.
-   - **If no lock file:** Create it with current PID, UTC timestamp, and a random session ID.
-   - **On exit (normal or error):** Always delete the lock file. Use a trap:
-     ```bash
-     trap 'rm -f ~/startup-workspace/ENGINE.lock' EXIT
-     ```
-2. **Kill switch:** Check if `~/startup-workspace/STOP` file exists → if yes, print reason, do NOT spawn any agents, exit
-3. **Pause check:** Check if `company_state.json` has `paused: true` → if yes, print status, exit
-4. **Budget check:** Read `logs/costs.jsonl`, sum this sprint → if over `preferences.budget_per_sprint`, pause and escalate to CEO. **Email CEO:**
+1. **Kill switch:** Check if `~/startup-workspace/STOP` file exists → if yes, print reason, do NOT spawn any agents, exit
+2. **Pause check:** Check if `company_state.json` has `paused: true` → if yes, print status, exit
+3. **Budget check:** Read `logs/costs.jsonl`, sum this sprint → if over `preferences.budget_per_sprint`, pause and escalate to CEO. **Email CEO:**
    **Email CEO** via GHL (see CEO Email Notifications section)
-5. **Stale phase check:** Read `company_state.json` → if same phase for 6+ consecutive COO cycles (3 hours) with no new artifacts, mark as blocker and escalate to CEO — do NOT re-spawn the same agent. **Email CEO:**
+4. **Stale phase check:** Read `company_state.json` → if same phase for 6+ consecutive COO cycles (3 hours) with no new artifacts, mark as blocker and escalate to CEO — do NOT re-spawn the same agent. **Email CEO:**
    **Email CEO** via GHL (see CEO Email Notifications section)
-6. **Max retries check:** Read `state/phase_attempts.json` → if current phase has been attempted 3+ times, escalate instead of retrying. **Email CEO:**
+5. **Max retries check:** Read `state/phase_attempts.json` → if current phase has been attempted 3+ times, escalate instead of retrying. **Email CEO:**
    **Email CEO** via GHL (see CEO Email Notifications section)
 
 **Then proceed with normal cycle:**
 
-7. Read `~/startup-workspace/state/company_state.json`
-8. Read [sdlc_protocol.md](./reference/sdlc_protocol.md)
-9. Determine current phase
-10. Check: does the current phase's expected output artifact exist?
-    - YES → Run quality gate check → If pass: advance to next phase, reset attempt counter
-    - NO → Increment attempt counter in `state/phase_attempts.json`
+6. Read `~/startup-workspace/state/company_state.json`
+7. Read [sdlc_protocol.md](./reference/sdlc_protocol.md)
+8. Determine current phase
+9. Check: does the current phase's expected output artifact exist?
+   - YES → Run quality gate check → If pass: advance to next phase, reset attempt counter
+   - NO → Increment attempt counter in `state/phase_attempts.json`
+10. **E2E Gate Enforcement (Sprint 7 Retro Rule):** When checking E2E results before advancing to Phase 7.5/8:
+    - Read the E2E report's verdict field. **Anything other than exactly "PASS" is treated as FAIL** — including "PARTIAL", "PASS (with caveats)", or "PASS*".
+    - The E2E report **must contain a viewable URL** showing the product working with real data.
+    - If verdict ≠ "PASS" OR no URL: **return to Phase 6 (Development)**. Do not re-run E2E hoping for a different result — fix the underlying issue first.
+    - **Pre-ship checklist** (must be true before advancing past E2E):
+      - `[ ] CAN YOU SEE IT?` — The product's primary output is viewable at a URL with real data
+      - `[ ] CREDENTIALS VERIFIED` — Every credential was tested via real API call (not just existence check)
 11. If advancing: load the next phase's VP prompt from [phase_prompts/](./reference/phase_prompts/)
-12. Substitute variables ({workspace}, {epic}, {sprint}, prior phase outputs)
-13. Spawn VP Agent via Agent tool (**always foreground** — see Safety Controls below)
-14. Update company_state.json with new phase, UTC timestamp
-15. Append to logs/agent_activity.jsonl (include cost estimate for this cycle, UTC timestamps)
-16. Update WORKING_CONTEXT.md with current status (even if nothing changed — update UTC timestamp)
-17. Git commit and push all `.claude-engine/` files:
+11. Substitute variables ({workspace}, {epic}, {sprint}, prior phase outputs)
+12. Spawn VP Agent via Agent tool (**always foreground** — see Safety Controls below)
+13. Update company_state.json with new phase, UTC timestamp
+14. Append to logs/agent_activity.jsonl (include cost estimate for this cycle, UTC timestamps)
+15. Update WORKING_CONTEXT.md with current status (even if nothing changed — update UTC timestamp)
+16. Git commit and push all `.claude-engine/` files:
     ```bash
     cd {repo} && git add .claude-engine/ && git commit -m "chore(engine): COO cycle — phase {phase}" && git push origin {branch} 2>/dev/null || true
     ```
-18. If phase is a CEO gate: write summary to reviews/ceo_reviews/ and PAUSE. **Email CEO:**
+17. If phase is a CEO gate: write summary to reviews/ceo_reviews/ and PAUSE. **Email CEO:**
     **Email CEO** via GHL (see CEO Email Notifications section)
 
 **IMPORTANT:** When spawning VP agents, prepend this directive to every prompt:
@@ -496,55 +488,6 @@ agent. The commit is still local and will be pushed on the next successful cycle
 
 This means: if a droplet dies, you spin up a new one, clone the repo, and the engine picks
 up exactly where it left off. No lost context. No re-doing completed work.
-
-### Persistent Storage with DO Block Storage Volumes
-
-For droplets that run the engine, use a DigitalOcean Block Storage Volume to persist the
-workspace across droplet destruction. This is cheaper than keeping a droplet running idle
-and more reliable than git-only persistence (secrets, venvs, and uncommitted work survive).
-
-**Cost:** $0.10/month per GiB. A 1 GiB volume covers years of engine state.
-
-**One-time setup:**
-```bash
-# Create volume (once, in your preferred region)
-doctl compute volume create engine-state --region nyc1 --size 1GiB
-# Note the volume ID from output
-```
-
-**Droplet provisioning (add to provision.sh or droplet-clone):**
-```bash
-# Attach the persistent volume
-VOLUME_ID=$(doctl compute volume list --format ID,Name --no-header | grep engine-state | awk '{print $1}')
-if [ -n "$VOLUME_ID" ]; then
-  doctl compute volume-action attach "$VOLUME_ID" "$DROPLET_ID" --wait
-  # Auto-mounts at /mnt/engine_state on Ubuntu
-  # Symlink workspace and venvs to the volume
-  mkdir -p /mnt/engine_state/startup-workspace /mnt/engine_state/.venvs
-  ln -sf /mnt/engine_state/startup-workspace ~/startup-workspace
-  ln -sf /mnt/engine_state/.venvs ~/.venvs
-  echo "Persistent volume attached. Workspace survives droplet destruction."
-else
-  echo "No engine-state volume found. Using ephemeral storage."
-fi
-```
-
-**What lives on the volume:**
-- `startup-workspace/` — full engine state, .env secrets, history, logs
-- `.venvs/` — Python virtual environments (litellm, etc.) — avoids reinstalling on each droplet
-
-**Limitations:**
-- Volumes are **region-locked** — can only attach to droplets in the same region
-- Volumes attach to **one droplet at a time** — enforces single-engine-per-volume
-- To move regions: snapshot the volume → create from snapshot in new region
-
-**Moving a volume to a new droplet:**
-```bash
-# Detach from old droplet (or it detaches automatically when droplet is destroyed)
-doctl compute volume-action detach <volume-id> <old-droplet-id>
-# Attach to new droplet
-doctl compute volume-action attach <volume-id> <new-droplet-id> --wait
-```
 
 ### On CEO Review
 

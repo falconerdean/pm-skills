@@ -86,6 +86,21 @@ Reference designs during build:
 - mcp__claude_ai_Figma__get_design_context (for UI implementation)
 - mcp__claude_ai_Figma__get_code_connect_map (component mapping)
 
+### Step 2b: Schema Contract Tests (Sprint 7 Retro, 2026-04-08)
+
+When expanding a schema to accept upstream data (e.g., pipeline writes richer structures, external API returns new fields), do ALL of the following **in the same commit**:
+
+1. Update the schema definition (Sanity schema, DB migration, etc.)
+2. Update the TypeScript type to match the **actual upstream data shape** — not a simplified version
+3. Update test fixtures to use a **real upstream document snapshot** — not a hand-written placeholder
+
+Then write a contract test that:
+- Feeds the real upstream document through the full rendering/processing path
+- Asserts no crash (no `[object Object]`, no `undefined`, no type errors)
+- Asserts correct output (the data displays as intended)
+
+**Why this exists:** Sprint 7's pipeline wrote `credentials` as `Array<{text: string}>`. The TypeScript type said `string`. Test fixtures used `'LCSW'`. Build passed. 1,406 tests passed. The site rendered `[object Object]` in production because no test ever fed real pipeline output through the rendering path.
+
 ### Step 3: Cross-Boundary Integration Tests
 For EVERY external system boundary (webhook, CMS, email, auth, payment):
 - Write at least ONE integration test that crosses the boundary with a realistic payload

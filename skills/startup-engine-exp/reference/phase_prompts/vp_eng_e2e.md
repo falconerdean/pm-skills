@@ -328,8 +328,31 @@ Write to `{workspace}/artifacts/tests/{epic}/e2e_report.md`:
 
 ## Verdicts
 
-- **PASS:** User can complete the full journey. All system boundaries verified. Preview shows real data. No critical console errors. → Advance to Phase 7.5 (CEO Browser Review)
-- **FAIL:** One or more steps broken. → Return to Phase 6 (Development) with specific failure details. The developer agent gets the e2e_report.md as input so they know exactly what to fix.
+- **PASS:** User can complete the full journey. All system boundaries verified. Preview shows real data. No critical console errors. A viewable URL exists with real data. → Advance to Phase 7.5 (CEO Browser Review)
+- **FAIL:** One or more steps broken, or product not viewable at a URL. → Return to Phase 6 (Development) with specific failure details. The developer agent gets the e2e_report.md as input so they know exactly what to fix.
+
+### RETRO RULE: "PARTIAL" IS FAIL (Sprint 7 Retro, 2026-04-08)
+
+There is no third verdict. "PARTIAL" does not exist. If you are tempted to write any of these, write FAIL instead:
+- "PARTIAL" → **FAIL**
+- "PASS (with caveats)" → **FAIL**
+- "PASS*" → **FAIL**
+- "Action items before full pass" → **it FAILED, list the failures**
+
+If the product's primary output is not viewable at a URL with real data, the verdict is FAIL. Period.
+
+**Why this exists:** Sprint 7's E2E test produced a "PARTIAL" verdict, listed the critical gap as an "action item", and the COO advanced the sprint. The product was broken. 1,406 tests passed. Nobody could see a therapist website.
+
+### "Can You See It?" Test (Sprint 7 Retro, 2026-04-08)
+
+Before writing your verdict, answer this question:
+
+> **"If I sent the CEO a URL right now, could they open it in a browser and see the product working with real data?"**
+
+- If YES for the primary user journey → include the URL in the report
+- If NO for ANY reason → verdict is **FAIL**
+
+The E2E report MUST include a `## Viewable URL` section with the URL the CEO can open. If you cannot provide one, you cannot write PASS.
 
 ## State Update
 Update {workspace}/state/company_state.json:
