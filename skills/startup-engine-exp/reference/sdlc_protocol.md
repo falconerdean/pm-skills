@@ -73,6 +73,32 @@ Every sprint must include at least one success criterion phrased as: "A [user ty
 
 **Why this exists:** Sprint 7's five success criteria were all engineer-visible ("single document type serves both pipeline and rendering") and could be "validated" without anyone opening a browser. Every criterion passed. The product was broken.
 
+### Rule: Memory Injection Layer (Sprint 12 Rule, 2026-04-10)
+
+Every VP agent the COO spawns receives phase-relevant institutional learnings via the SubagentStart hook at `~/.claude/hooks/capture_subagent.py`. The injection is structural — the agent receives the learnings as a `system-reminder` before processing its first instruction, and cannot opt out. The hook reads phase from `state/company_state.json`, project from `state/project_config.json`, and queries `~/.claude/memory/query.py` for filtered+ranked entries.
+
+**The COO must refresh `## Learning Injections` in `WORKING_CONTEXT.md` at every phase transition.** The hook prefers reading from this pre-cached section (fast, deterministic) but falls back to direct query.py invocation if absent. See SKILL.md "Update Rule 5" for the exact command.
+
+**Silent observer naming convention (cold-read protection).** When the COO spawns a silent observer agent, the `Agent(description=...)` call MUST start with `silent-observer:` (lowercase, with the colon). The SubagentStart hook detects this prefix and switches to process-only injection — silent observers receive learnings about HOW to verify claims (process knowledge) but NOT learnings about the current task (cold-read protection). Example:
+
+```python
+# Primary VP Engineering — full memory injection
+Agent(description="VP Engineering — Phase 5 Architecture", ...)
+
+# Silent observer at Phase 5 — process learnings only
+Agent(description="silent-observer: Phase 5 architectural fact verification", ...)
+```
+
+**Why this exists:** Sprint 11 lost three sprints to a hallucinated SDK method that was documented in prior memory but never injected into VP agents. The memory injection layer is the structural fix — past-sprint learnings now reach every VP agent before it acts. See `~/Documents/VectorDB_Agent_Memory_Research_20260410/application_report.md` Findings 1, 4, 6.
+
+### Rule: Research Claims Must Be Independently Verifiable (Sprint 12 Rule, 2026-04-10)
+
+Every factual claim that enters a discovery brief — SDK methods, library capabilities, market statistics, regulatory requirements, company facts, pricing, technical constraints — MUST be independently verifiable by a reviewer with no access to the primary researcher's reasoning chain. The Silent Observer (Phase 2 wrapper at `skills/startup-engine-exp/agents/silent-observer/`) runs after `discovery_brief.md` is written, in a fresh Gemini 3 Pro session, with structural isolation from any primary-researcher artifacts. If any load-bearing claim cannot be verified from fresh web search, Phase 2 does not advance.
+
+**Why this exists:** Sprint 11 lost three sprints to a hallucinated SDK method. The research doc claimed "Stitch SDK has an extractUrl() method." No such method exists. Sprint 9 built around it. Sprint 10 rationalized a pivot. Sprint 11 ran the retro. The Silent Observer is the structural defense: a fresh agent with no access to the primary's training-data memory, verifying every load-bearing claim from scratch, before any downstream phase starts trusting those claims.
+
+**Why this rule is structural, not prompted:** The Silent Observer enforcement lives in `scripts/invoke_silent_observer.py`. The COO cannot bypass it by modifying a prompt or passing "helpful context" — the function signature only accepts `workspace` and `epic`, and reads inputs from fixed paths with an allowlist of files. Filename patterns for contaminated reasoning (`*self_assessment*`, `*handoff*`, `*summary_for_*`, `*reasoning_trace*`) are explicitly blocked from ever reaching the reviewer. This is "protocol as code," not "protocol as prompt."
+
 ### Rule: Schema Changes Must Update Types AND Test Fixtures (Sprint 7 Retro, 2026-04-08)
 When a data schema is expanded (e.g., upstream service writes a richer structure), three things must happen in the same commit:
 1. The schema definition (e.g., Sanity schema, DB migration)
@@ -142,8 +168,19 @@ INITIALIZE → PLANNING → RESEARCH → REQUIREMENTS → UX_DESIGN → TECH_DES
   - {workspace}/artifacts/research/{epic}/competitive_analysis.json
   - {workspace}/artifacts/research/{epic}/discovery_brief.md
 - **Quality Gate:** >=10 real sources with URLs, 2+ personas grounded in data, evidence-backed problem statement
-- **Advance Condition:** discovery_brief.md exists and passes gate
-- **CEO Gate:** No
+- **Silent Observer Gate (NEW — Sprint 12 Rule):** After `discovery_brief.md` is written, the COO MUST invoke the Silent Observer wrapper script before advancing to Phase 3:
+  ```bash
+  python3 skills/startup-engine-exp/agents/silent-observer/scripts/invoke_silent_observer.py \
+    --workspace {workspace} --epic {epic}
+  ```
+  The wrapper runs Gemini 3 Pro against the discovery brief with strict structural isolation from the primary researcher's reasoning chain. It identifies factual claims (SDK methods, library capabilities, market stats, regulatory requirements, company facts, pricing, technical constraints) and independently verifies each one via fresh web search and document fetching. The wrapper reads only: `state/project_config.json` (product_description field), `state/sprint_plan.json` (goal field), and `artifacts/research/{epic}/discovery_brief.md`. It deliberately does NOT read any self-assessment, handoff, or summary files from the primary researcher — enforced by an allowlist in the script itself, not by prompting.
+  - **On APPROVE:** COO advances to Phase 3 normally.
+  - **On FLAG:** COO advances to Phase 3 with the flag report attached to the phase output. Non-load-bearing unverified claims are logged but do not block.
+  - **On BLOCK:** COO does NOT advance. Returns Phase 2 to VP Product Research with the contradicted claims and required actions. Three-strikes rule: after 3 BLOCKs on the same brief, escalate to CEO.
+  - **On wrapper halt (exit 1-4):** COO escalates to CEO. Do not silently skip the Silent Observer — a halt is a hard stop.
+  - **Why this exists:** Sprint 11 lost three sprints to a single hallucinated SDK method (`Stitch SDK extractUrl()`) that no one verified at the time the research doc was written. The Silent Observer is the structural defense against that failure mode. See `research/business_objective_evaluation_research_2026-04-10.md` for the research basis and `skills/startup-engine-exp/agents/silent-observer/SKILL.md` for the full protocol.
+- **Advance Condition:** discovery_brief.md exists AND Silent Observer verdict is APPROVE or FLAG (not BLOCK).
+- **CEO Gate:** No (but CEO is emailed on BLOCK, same mechanism as credential failures)
 
 ### Phase 3: REQUIREMENTS
 - **Owner:** VP Product
@@ -204,8 +241,28 @@ INITIALIZE → PLANNING → RESEARCH → REQUIREMENTS → UX_DESIGN → TECH_DES
   - {workspace}/artifacts/designs/{epic}/tech/api_spec.json (complete endpoint definitions)
   - {workspace}/artifacts/designs/{epic}/tech/db_schema.sql (executable SQL)
 - **Quality Gate:** /workflows:full-review, db_schema.sql is valid SQL, api_spec.json has real request/response types
-- **Advance Condition:** architecture.md + api_spec.json exist and pass review
-- **CEO Gate:** No
+- **Rival Architect Gate (NEW — Sprint 12 Rule):** After VP Engineering produces all three primary artifacts (architecture.md, api_spec.json, db_schema.sql), the COO MUST run the Rival Architect protocol before advancing to Phase 5.5. The protocol has two steps:
+  1. **Produce the rival architecture (independent first response):**
+     ```bash
+     python3 skills/startup-engine-exp/agents/rival-architect/scripts/invoke_rival_architect.py \
+       --workspace {workspace} --epic {epic}
+     ```
+     This wrapper invokes Gemini 3 Pro with structural isolation from the primary's tech output. The rival reads only the brief, requirements, and design — never Claude's architecture.md, api_spec.json, or db_schema.sql. The wrapper writes the rival's three artifacts to `{workspace}/artifacts/designs/{epic}/tech/rival/`.
+  2. **Compare both architectures (deterministic + bounded judgment):**
+     ```bash
+     python3 skills/startup-engine-exp/agents/rival-architect/scripts/compare_architectures.py \
+       --workspace {workspace} --epic {epic}
+     ```
+     This script runs the 8-stage comparison protocol: structural validation, section coverage, database schema diff, API surface diff, dependency diff, specialization keyword counts, constrained LLM judgment surfacing, deterministic verdict computation. Verdicts:
+     - **APPROVE** — Both architectures pass validation, agree on structure, no substantive disagreements. Phase 5 advances to Phase 5.5.
+     - **FLAG** — Minor differences exist (one architect modeled an extra table, one's concurrency section is more thorough). Phase 5 advances with the comparison report attached.
+     - **ESCALATE** — Substantive disagreements requiring CEO decision (different database choice, different API pattern, different deployment target, different concurrency model, or any judgment-level disagreement marked `requires_ceo_decision: true`). Phase 5 PAUSES. CEO is emailed with both architectures + the disagreements list, and must respond via /btw approve before Phase 5 advances.
+     - **BLOCK** — One or both architectures failed structural validation (invalid SQL, invalid JSON, missing 3+ required sections). Phase 5 returns to the failing architect's owner with specific issues. Three-strikes rule applies.
+  - **Why this exists:** Sprint 7 lost time to architectural decisions built on Claude's training-data assumptions about library compatibility and concurrency. The Milvus 2026 multi-agent benchmark found that Claude scores 0/2 on concurrency races where Gemini scores 1/2. Pairing Claude + Gemini covers 91% of the bug-detection ceiling because their blind spots are complementary. The Rival Architect is the structural defense — two genuinely different model lineages independently produce the architecture, and a structural comparison surfaces where they disagreed so the CEO can decide. See `research/business_objective_evaluation_research_2026-04-10.md` and `skills/startup-engine-exp/agents/rival-architect/SKILL.md` for the full protocol.
+  - **Why it's structural, not prompted:** Like the Silent Observer at Phase 2, the Rival Architect is enforced by Python code (`invoke_rival_architect.py` + `compare_architectures.py`). The COO cannot bypass independent first response by passing Claude's architecture.md as "helpful context" — the wrapper's input allowlist excludes the primary's tech directory. The structural diffs (Stages 1-6 of the comparison) are deterministic Python; only Stage 7 makes a single bounded LLM call, with an explicit prompt forbidding "which is better" judgments.
+  - **`GEMINI_API_KEY` is required.** The Rival Architect halts with `RIVAL_ARCHITECT_UNAVAILABLE` if Gemini is unreachable. We deliberately do NOT fall back to Claude — that would defeat the different-training-lineage purpose.
+- **Advance Condition:** architecture.md + api_spec.json + db_schema.sql exist AND Rival Architect comparison verdict is APPROVE or FLAG (not ESCALATE or BLOCK).
+- **CEO Gate:** Only on ESCALATE — CEO is emailed both architectures and must approve a direction via /btw before advancing.
 
 ### Phase 5.5: CREDENTIAL VERIFICATION
 - **Owner:** COO
