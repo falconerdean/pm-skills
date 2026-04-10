@@ -86,6 +86,14 @@ your terminal.
 | `SANITY_TOKEN` | Sanity CMS — write access token | 4, 9 |
 | `FIGMA_ACCESS_TOKEN` | Figma — create designs, read design systems | 4 |
 
+### Required for Silent Observer (Phase 2 Rival)
+
+| Variable | Purpose | Used By Phases |
+|----------|---------|----------------|
+| `GEMINI_API_KEY` | **Silent Observer (Phase 2) — Gemini 3 Pro fact verification of discovery briefs.** Required for Phase 2 advancement. The Silent Observer is built as a wrapper script that uses a fixed model (`gemini-3-pro`) and does NOT fall back to Claude-family models. Without this key, Phase 2 halts with `SILENT_OBSERVER_UNAVAILABLE`. Get key at https://aistudio.google.com/apikey | 2 |
+
+Why Gemini specifically: Sprint 12 research on multi-model rivalry found that Claude + Gemini covers 91% of the Milvus 2026 bug-detection benchmark ceiling because their training lineages are genuinely different — Claude's blind spots are concurrency/compatibility/library-existence; Gemini catches exactly those. Using Claude Sonnet as the secondary reviewer would produce correlated blind spots. See `research/business_objective_evaluation_research_2026-04-10.md` Section 6.4 for the reviewer bias literature.
+
 ### Optional (enhance specific phases)
 
 | Variable | Purpose | Used By Phases |
@@ -448,6 +456,18 @@ a new session needs to know to avoid re-debating settled questions}
 
 ## Credentials Status
 {Which env vars are set vs missing — so a new session knows what's available}
+
+## Learning Injections (Sprint {N}, Phase: {phase_name})
+<!-- Written by COO at every phase transition. Read by SubagentStart hook for
+     memory injection into VP agents. Do not edit manually. -->
+<!-- Generated: {YYYY-MM-DDTHH:MM:SSZ} | Entries: {count} | Project: {slug} | Phase: {phase} -->
+
+[LEARNING-{ID}] SEVERITY: {SEVERITY} | PHASE: {phases} | PROJECT: {project} | TYPE: {learning_type}
+{description}
+CONSEQUENCE: {consequence}
+RULE: {actionable rule}
+
+[LEARNING-{ID}] ...
 ```
 
 **Update Rules:**
@@ -464,6 +484,28 @@ a new session needs to know to avoid re-debating settled questions}
 
 4. **On INITIALIZE,** if WORKING_CONTEXT.md already exists, read it FIRST before doing
    anything else. This is how a killed session recovers.
+
+5. **COO MUST refresh `## Learning Injections` at every phase transition.** Run:
+   ```bash
+   python3 ~/.claude/memory/query.py \
+     --phase {next_phase_name} \
+     --project {project_slug_from_project_config.json} \
+     --top-n 5 \
+     --char-budget 8000 \
+     --format injection > /tmp/learning_injection.txt
+   ```
+   Then replace the `## Learning Injections` section in WORKING_CONTEXT.md with the
+   contents of `/tmp/learning_injection.txt`. This pre-caches the phase-relevant
+   learnings so the SubagentStart hook can read them quickly when spawning VP agents
+   for the next phase. **Why:** The SubagentStart hook fires in milliseconds when the
+   COO spawns a VP agent — querying memory at hook time would add latency. Pre-caching
+   at phase-transition time means the hook is just a single file read.
+
+   **The injection is the structural defense against the Sprint 11 Stitch failure.**
+   See `~/Documents/VectorDB_Agent_Memory_Research_20260410/application_report.md`
+   Finding 1 for the architectural rationale and `~/.claude/hooks/capture_subagent.py`
+   for the hook implementation. The hook auto-skips agents whose description begins
+   with `silent-observer:` (the cold-read protection).
 
 ### Git Persistence Protocol — Everything Gets Committed
 
