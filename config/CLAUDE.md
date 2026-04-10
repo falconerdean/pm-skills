@@ -84,6 +84,14 @@ A capture and analysis pipeline runs automatically on every Claude Code session 
 
 ---
 
+## CRITICAL: Re-Trigger Cursor Bugbot After Pushing Fixes
+
+When you push a commit that addresses a Cursor Bugbot review on a PR, you MUST add a `@cursor review` comment on the PR via `gh pr comment <number> --body "@cursor review"` so Bugbot re-reviews the new commit. Do not assume Bugbot will pick up the new commit automatically — it does not. Without this comment, the user has no signal that the fix was verified by the same bot that flagged the original issue.
+
+This applies to any push that responds to Bugbot, including follow-up fixes after a previous re-review. Each new commit that addresses Bugbot feedback gets its own `@cursor review` ping.
+
+---
+
 ## CRITICAL: Look Up Instructions Before Giving Them
 
 When the user asks "how do I set up X", "how do I configure X", or any request for step-by-step instructions — NEVER answer from training data or assumptions. Always fetch current documentation first.
