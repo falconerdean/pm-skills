@@ -1,0 +1,19 @@
+# SpecStory transcripts can contain secrets that were typed during conversations.
+# Encrypt them at rest in git history so GitHub's secret scanner doesn't flag pushes
+# and so the contents aren't readable to anyone without the symmetric key.
+#
+# Setup (one-time, after cloning):
+#   1. Get the symmetric key from Doppler:
+#        doppler secrets get GIT_CRYPT_KEY --plain | base64 -d > /tmp/git-crypt.key
+#   2. Unlock the repo:
+#        git-crypt unlock /tmp/git-crypt.key
+#   3. Delete the temp key file:
+#        rm /tmp/git-crypt.key
+#
+# After unlock, .specstory files in your working tree are readable as plaintext.
+# Anything new written to .specstory/ will be encrypted automatically before commit.
+#
+# NOTE: This only encrypts NEW commits. Files already in pre-existing commits on
+# origin/main remain in plaintext. Setup date: 2026-04-10.
+
+.specstory/** filter=git-crypt diff=git-crypt
